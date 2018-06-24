@@ -1,0 +1,109 @@
+buildscript {
+	ext {
+		springBootVersion = '2.0.3.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+
+plugins {
+  id "com.github.spotbugs" version "1.6.2"
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'checkstyle'
+apply plugin: 'jacoco'
+
+group = 'com.github._1element'
+sourceCompatibility = 10
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+  compile('org.springframework.boot:spring-boot-starter')
+  compile('org.apache.ftpserver:ftpserver-core:1.1.1')
+  compile('org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0')
+  compile('org.apache.commons:commons-lang3:3.7')
+  compileOnly('org.projectlombok:lombok')
+  testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+tasks.withType(JavaCompile) {
+  options.compilerArgs << "-Xlint:unchecked" << "-Werror"
+}
+
+test {
+  useJUnit {
+    exclude '**/*IntegrationTests.class'
+  }
+}
+
+task integrationTest(type: Test) {
+  useJUnit {
+    include '**/*IntegrationTests.class'
+  }
+  forkEvery = 1
+  group = "verification"
+  description = "Execute integration tests."
+}
+
+integrationTest.mustRunAfter test
+check.dependsOn integrationTest
+
+checkstyle {
+  toolVersion = "8.10.1"
+  // fail build for checkstyle warnings and errors
+  maxErrors = 0
+  maxWarnings = 0
+}
+
+tasks.withType(com.github.spotbugs.SpotBugsTask) {
+  reports {
+    xml.enabled = false
+    html.enabled = true
+  }
+}
+
+spotbugs {
+  spotbugsTest.enabled = false
+  excludeFilter = file("$rootProject.projectDir/config/spotbugs/excludeFilter.xml")
+}
+
+jacoco {
+  toolVersion = "0.8.1"
+}
+
+jacocoTestCoverageVerification {
+  violationRules {
+    rule {
+      element = 'CLASS'
+      excludes = ['com.github._1element.ftp2mqtt.Ftp2MqttApplication',
+                  'com.github._1element.ftp2mqtt.common.FilesFacade',
+                  'com.github._1element.ftp2mqtt.mqtt.MqttClientFactory']
+      limit {
+        minimum = 1.0
+      }
+    }
+  }
+  executionData(test, integrationTest)
+}
+
+// fail build if test coverage does not met
+check.dependsOn jacocoTestCoverageVerification
+
+jacocoTestReport {
+  reports {
+    html.enabled = true
+    html.destination file("${buildDir}/reports/jacoco")
+  }
+  executionData(test, integrationTest)
+}
