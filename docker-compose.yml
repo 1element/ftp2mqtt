@@ -1,0 +1,10 @@
+version: '2'
+services:
+  ftp2mqtt:
+    build: .
+    container_name: ftp2mqtt
+    restart: always
+    ports:
+      - "2121:2121"
+    volumes:
+      - ./volume/config:/config

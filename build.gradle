@@ -12,6 +12,7 @@ buildscript {
 
 plugins {
   id "com.github.spotbugs" version "1.6.2"
+  id "com.palantir.docker" version "0.19.2"
 }
 
 apply plugin: 'java'
@@ -106,4 +107,11 @@ jacocoTestReport {
     html.destination file("${buildDir}/reports/jacoco")
   }
   executionData(test, integrationTest)
+}
+
+docker {
+  dependsOn build
+  name "${bootJar.baseName}"
+  files bootJar.archivePath
+  buildArgs(['JAR_FILE': "${bootJar.archiveName}"])
 }
