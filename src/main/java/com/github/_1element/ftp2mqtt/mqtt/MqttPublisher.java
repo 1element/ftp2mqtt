@@ -23,6 +23,7 @@ public class MqttPublisher {
       client.connect(createConnectOptions());
       client.publish(topic, new MqttMessage(payload));
       client.disconnect();
+      client.close(); // WORKAROUND for https://github.com/eclipse/paho.mqtt.java/issues/402 (has performance implications)
       log.debug("Published message to topic '{}'", topic);
     } catch (final MqttException exception) {
       log.error("Error publishing to MQTT broker '{}'.", properties.getBrokerConnection(), exception);
